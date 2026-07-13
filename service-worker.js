@@ -7,7 +7,7 @@
    funktioniert – z. B. im Flugzeug oder am Strand ohne Empfang.
    ========================================================================== */
 
-const CACHE_NAME = "packliste-spanien-v1";
+const CACHE_NAME = "packliste-spanien-v2";
 
 // Alle Dateien, die für den Offline-Betrieb notwendig sind
 const APP_SHELL = [
@@ -51,29 +51,25 @@ self.addEventListener("activate", (event) => {
 });
 
 // ---------------------------------------------------------------------
-// FETCH: Cache-First-Strategie mit Netzwerk-Fallback und
-// Aktualisierung des Caches im Hintergrund (Stale-While-Revalidate)
+// FETCH: Network-First-Strategie mit Cache-Fallback.
+// So wird bei bestehender Internetverbindung immer die aktuelle Version
+// geladen (wichtig während der Weiterentwicklung der App). Nur wenn das
+// Netzwerk nicht erreichbar ist (z. B. im Flugzeug, am Strand ohne
+// Empfang), wird auf die zuletzt gecachte Version zurückgegriffen.
 // ---------------------------------------------------------------------
 self.addEventListener("fetch", (event) => {
   // Nur GET-Anfragen behandeln, alles andere unangetastet lassen
   if (event.request.method !== "GET") return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const networkFetch = fetch(event.request)
-        .then((response) => {
-          // Nur gültige Antworten in den Cache legen
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached); // Offline: auf Cache zurückfallen
-
-      // Falls bereits im Cache vorhanden, sofort ausliefern und im Hintergrund aktualisieren.
-      // Andernfalls auf das Netzwerk warten (bzw. bei Fehler auf den Cache zurückfallen).
-      return cached || networkFetch;
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
