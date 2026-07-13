@@ -211,6 +211,9 @@ h1, h2, h3, p { margin: 0; }
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
+.clear-btn[hidden] {
+  display: none !important;
+}
 
 /* Filter-Chips */
 .chips-row {
@@ -540,6 +543,14 @@ h1, h2, h3, p { margin: 0; }
   display: flex; align-items: flex-end;
   animation: overlayFade 0.25s ease;
 }
+/* Wichtig: das [hidden]-Attribut muss die obige display:flex-Regel zuverlässig
+   überschreiben können. Ohne diese Regel gewinnt sonst die spezifischere
+   .sheet-overlay-Regel gegenüber dem User-Agent-Standard für [hidden],
+   wodurch sich Sheets nicht mehr schließen lassen. */
+.sheet-overlay[hidden] {
+  display: none !important;
+}
+.sheet-overlay[hidden] { display: none; }
 @keyframes overlayFade { from { opacity: 0; } to { opacity: 1; } }
 .sheet {
   width: 100%;
