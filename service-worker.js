@@ -7,7 +7,7 @@
    funktioniert – z. B. im Flugzeug oder am Strand ohne Empfang.
    ========================================================================== */
 
-const CACHE_NAME = "packliste-spanien-v2";
+const CACHE_NAME = "packliste-spanien-v3";
 
 // Alle Dateien, die für den Offline-Betrieb notwendig sind
 const APP_SHELL = [

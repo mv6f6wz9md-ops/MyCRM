@@ -263,10 +263,10 @@
           </button>
           <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </div>
-        <div class="item-list"></div>
+        <div class="item-list"><div class="item-list-inner"></div></div>
       `;
 
-      const itemListEl = card.querySelector(".item-list");
+      const itemListEl = card.querySelector(".item-list-inner");
       items.forEach((it) => itemListEl.appendChild(renderItemRow(it)));
 
       categoryListEl.appendChild(card);
