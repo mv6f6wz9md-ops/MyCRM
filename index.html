@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Packliste Spanien – Familienurlaub</title>
+<meta name="description" content="Familien-Packlisten-App für den Spanienurlaub mit über 900 Packpunkten.">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A84FF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
+
+<!-- iOS-spezifisch -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Packliste">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===================== HEADER (sticky) ===================== -->
+<header class="app-header" id="appHeader">
+  <div class="header-row">
+    <div class="header-title">
+      <span class="header-emoji" aria-hidden="true">🧳</span>
+      <div class="header-text">
+        <h1>Packliste Spanien</h1>
+        <p id="headerSubtitle">Familienurlaub</p>
+      </div>
+    </div>
+    <button class="icon-btn" id="themeToggleBtn" aria-label="Darstellung umschalten" title="Hell / Dunkel / System">
+      <svg id="themeIconSun" viewBox="0 0 24 24" class="theme-icon"><circle cx="12" cy="12" r="4.2"/><g stroke-linecap="round"><line x1="12" y1="2.5" x2="12" y2="5.2"/><line x1="12" y1="18.8" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5.2" y2="12"/><line x1="18.8" y1="12" x2="21.5" y2="12"/><line x1="4.9" y1="4.9" x2="6.8" y2="6.8"/><line x1="17.2" y1="17.2" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="6.8" y2="17.2"/><line x1="17.2" y1="6.8" x2="19.1" y2="4.9"/></g></svg>
+      <svg id="themeIconMoon" viewBox="0 0 24 24" class="theme-icon" style="display:none"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
+    </button>
+  </div>
+
+  <!-- Sticky Fortschritt -->
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-meta">
+      <span id="progressCount">0 / 0 gepackt</span>
+      <span id="progressPercent">0 %</span>
+    </div>
+  </div>
+
+  <!-- Sticky Suche -->
+  <div class="search-wrap">
+    <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><line x1="16.2" y1="16.2" x2="21" y2="21"/></svg>
+    <input type="search" id="searchInput" placeholder="Packpunkt suchen …" autocomplete="off" enterkeyhint="search">
+    <button class="clear-btn" id="clearSearchBtn" aria-label="Suche löschen" hidden>✕</button>
+  </div>
+
+  <!-- Filter-Chips -->
+  <div class="chips-row" id="chipsRow">
+    <button class="chip chip-fav" id="chipFavorites" data-active="false">★ Favoriten</button>
+    <button class="chip" id="chipPersonFilter" data-active="false">Person</button>
+    <button class="chip" id="chipSuitcaseFilter" data-active="false">Koffer</button>
+    <button class="chip" id="chipHideDone" data-active="false">Offene ausblenden</button>
+  </div>
+</header>
+
+<!-- ===================== HAUPTINHALT ===================== -->
+<main id="mainContent">
+
+  <!-- Ansicht: Liste -->
+  <section id="viewList" class="view">
+    <div id="emptyState" class="empty-state" hidden>
+      <div class="empty-emoji">🔍</div>
+      <p>Keine Packpunkte gefunden.</p>
+      <p class="empty-sub">Passe deine Suche oder Filter an.</p>
+    </div>
+    <div id="categoryList" class="category-list"></div>
+    <div class="list-bottom-actions">
+      <button class="ghost-btn" id="expandAllBtn">Alle ausklappen</button>
+      <button class="ghost-btn" id="collapseAllBtn">Alle einklappen</button>
+    </div>
+  </section>
+
+  <!-- Ansicht: Statistik -->
+  <section id="viewStats" class="view" hidden>
+    <h2 class="view-title">Statistik</h2>
+    <div class="stats-grid" id="statsGrid"></div>
+    <h3 class="view-subtitle">Fortschritt je Person</h3>
+    <div class="stats-bars" id="statsPersonBars"></div>
+    <h3 class="view-subtitle">Fortschritt je Kategorie</h3>
+    <div class="stats-bars" id="statsCategoryBars"></div>
+  </section>
+
+  <!-- Ansicht: Einstellungen -->
+  <section id="viewSettings" class="view" hidden>
+    <h2 class="view-title">Einstellungen</h2>
+
+    <div class="settings-card">
+      <h3>Darstellung</h3>
+      <div class="settings-row">
+        <span>Design-Modus</span>
+        <select id="themeSelect" class="settings-select">
+          <option value="system">System</option>
+          <option value="light">Hell</option>
+          <option value="dark">Dunkel</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <h3>Aktionen</h3>
+      <button class="settings-btn" id="markAllBtn">✅ Alles abhaken</button>
+      <button class="settings-btn" id="resetAllBtn">↺ Alles zurücksetzen</button>
+      <button class="settings-btn" id="printBtn">🖨️ Druckansicht (PDF)</button>
+    </div>
+
+    <div class="settings-card">
+      <h3>Eigene Inhalte</h3>
+      <button class="settings-btn" id="addCategoryBtn">➕ Eigene Kategorie hinzufügen</button>
+    </div>
+
+    <div class="settings-card">
+      <h3>Daten sichern</h3>
+      <button class="settings-btn" id="exportJsonBtn">⬇️ JSON exportieren</button>
+      <button class="settings-btn" id="importJsonBtn">⬆️ JSON importieren</button>
+      <button class="settings-btn" id="exportCsvBtn">⬇️ CSV exportieren</button>
+      <input type="file" id="importFileInput" accept="application/json" hidden>
+    </div>
+
+    <div class="settings-card">
+      <h3>Über diese App</h3>
+      <p class="settings-info">Packliste Spanien – Familienurlaub<br>
+      Alle Daten werden ausschließlich lokal auf diesem Gerät gespeichert. Die App funktioniert vollständig offline.</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===================== FLOATING ACTION BUTTON ===================== -->
+<button class="fab" id="fabAddItem" aria-label="Neuen Packpunkt hinzufügen">
+  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- ===================== BOTTOM NAVIGATION ===================== -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-btn active" data-view="viewList">
+    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h9"/></svg>
+    <span>Liste</span>
+  </button>
+  <button class="nav-btn" data-view="viewStats">
+    <svg viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+    <span>Statistik</span>
+  </button>
+  <button class="nav-btn" data-view="viewSettings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.5-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L14.9 3h-3.9l-.4 2.6a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.4 2.6h3.9l.4-2.6a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4Z"/></svg>
+    <span>Einstellungen</span>
+  </button>
+</nav>
+
+<!-- ===================== SHEET: Person-Filter ===================== -->
+<div class="sheet-overlay" id="personSheetOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Nach Person filtern">
+    <div class="sheet-handle"></div>
+    <h3>Nach Person filtern</h3>
+    <div class="sheet-options" id="personOptions"></div>
+    <button class="sheet-close-btn" data-close-sheet>Fertig</button>
+  </div>
+</div>
+
+<!-- ===================== SHEET: Koffer-Filter ===================== -->
+<div class="sheet-overlay" id="suitcaseSheetOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Nach Koffer filtern">
+    <div class="sheet-handle"></div>
+    <h3>Nach Koffer filtern</h3>
+    <div class="sheet-options" id="suitcaseOptions"></div>
+    <button class="sheet-close-btn" data-close-sheet>Fertig</button>
+  </div>
+</div>
+
+<!-- ===================== SHEET: Punkt hinzufügen ===================== -->
+<div class="sheet-overlay" id="addItemSheetOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Packpunkt hinzufügen">
+    <div class="sheet-handle"></div>
+    <h3>Neuen Packpunkt hinzufügen</h3>
+    <label class="field-label" for="newItemText">Bezeichnung</label>
+    <input type="text" id="newItemText" class="text-field" placeholder="z. B. Sonnenhut für Oma" maxlength="120">
+    <label class="field-label" for="newItemCategory">Kategorie</label>
+    <select id="newItemCategory" class="settings-select full-width"></select>
+    <label class="field-label" for="newItemPerson">Person / Zuordnung</label>
+    <select id="newItemPerson" class="settings-select full-width"></select>
+    <div class="sheet-actions">
+      <button class="sheet-cancel-btn" data-close-sheet>Abbrechen</button>
+      <button class="sheet-save-btn" id="saveNewItemBtn">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SHEET: Kategorie hinzufügen ===================== -->
+<div class="sheet-overlay" id="addCategorySheetOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Kategorie hinzufügen">
+    <div class="sheet-handle"></div>
+    <h3>Neue Kategorie anlegen</h3>
+    <label class="field-label" for="newCategoryName">Name</label>
+    <input type="text" id="newCategoryName" class="text-field" placeholder="z. B. Wandern" maxlength="40">
+    <label class="field-label" for="newCategoryIcon">Symbol (Emoji)</label>
+    <input type="text" id="newCategoryIcon" class="text-field" placeholder="🥾" maxlength="4">
+    <div class="sheet-actions">
+      <button class="sheet-cancel-btn" data-close-sheet>Abbrechen</button>
+      <button class="sheet-save-btn" id="saveNewCategoryBtn">Anlegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast für Rückmeldungen -->
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
