@@ -16,11 +16,11 @@
    reinen Offline-/Lokal-Modus (kein Sync, keine Fehlermeldungen).
    ========================================================================== */
 
-const FIREBASE_CONFIG = {
-  apiKey: "DEIN_API_KEY",
-  authDomain: "DEIN_PROJEKT.firebaseapp.com",
-  projectId: "DEIN_PROJEKT",
-  storageBucket: "DEIN_PROJEKT.appspot.com",
-  messagingSenderId: "DEINE_SENDER_ID",
-  appId: "DEINE_APP_ID",
+const firebaseConfig = {
+  apiKey: "AIzaSyDoGq92bpbPgKMpE5ZAIeNC5r52j_B1_xc",
+  authDomain: "packliste-8f4a1.firebaseapp.com",
+  projectId: "packliste-8f4a1",
+  storageBucket: "packliste-8f4a1.firebasestorage.app",
+  messagingSenderId: "449772649761",
+  appId: "1:449772649761:web:fee350a1eb1474c7ad9260"
 };
