@@ -16,7 +16,7 @@
    reinen Offline-/Lokal-Modus (kein Sync, keine Fehlermeldungen).
    ========================================================================== */
 
-const firebaseConfig = {
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDoGq92bpbPgKMpE5ZAIeNC5r52j_B1_xc",
   authDomain: "packliste-8f4a1.firebaseapp.com",
   projectId: "packliste-8f4a1",
