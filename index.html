@@ -117,6 +117,14 @@
     </div>
 
     <div class="settings-card">
+      <h3>Gemeinsam bearbeiten</h3>
+      <p class="settings-info" id="syncStatusText">Noch nicht verbunden. Erstelle eine geteilte Liste oder verbinde dich mit dem Code deiner Partnerin bzw. deines Partners, um die Packliste gemeinsam in Echtzeit zu bearbeiten.</p>
+      <button class="settings-btn" id="createSyncBtn">🔗 Neue geteilte Liste erstellen</button>
+      <button class="settings-btn" id="joinSyncBtn">🔑 Mit Code verbinden</button>
+      <button class="settings-btn" id="disconnectSyncBtn" hidden>🔌 Synchronisierung trennen</button>
+    </div>
+
+    <div class="settings-card">
       <h3>Eigene Inhalte</h3>
       <button class="settings-btn" id="addCategoryBtn">➕ Eigene Kategorie hinzufügen</button>
     </div>
@@ -213,9 +221,41 @@
   </div>
 </div>
 
+<!-- ===================== SHEET: Sync-Code anzeigen ===================== -->
+<div class="sheet-overlay" id="syncCodeSheetOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Geteilte Liste erstellt">
+    <div class="sheet-handle"></div>
+    <h3>Geteilte Liste erstellt</h3>
+    <p class="settings-info">Teile diesen Code mit deiner Partnerin bzw. deinem Partner. Code im gleichen Menü unter „Mit Code verbinden“ eingeben – schon synchronisiert sich die Liste auf beiden Geräten.</p>
+    <div class="sync-code-display" id="syncCodeDisplay">------</div>
+    <div class="sheet-actions">
+      <button class="sheet-cancel-btn" id="copySyncCodeBtn">Code kopieren</button>
+      <button class="sheet-save-btn" data-close-sheet>Fertig</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SHEET: Mit Code verbinden ===================== -->
+<div class="sheet-overlay" id="joinSyncSheetOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Mit Code verbinden">
+    <div class="sheet-handle"></div>
+    <h3>Mit geteilter Liste verbinden</h3>
+    <label class="field-label" for="joinSyncCodeInput">Code von deiner Partnerin/deinem Partner</label>
+    <input type="text" id="joinSyncCodeInput" class="text-field" placeholder="z. B. 7K9XPL" maxlength="6" style="text-transform:uppercase">
+    <p class="settings-info" style="margin-top:8px;">Achtung: Der aktuelle Packfortschritt auf diesem Gerät wird dabei durch die geteilte Liste ersetzt.</p>
+    <div class="sheet-actions">
+      <button class="sheet-cancel-btn" data-close-sheet>Abbrechen</button>
+      <button class="sheet-save-btn" id="confirmJoinSyncBtn">Verbinden</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast für Rückmeldungen -->
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
 </body>

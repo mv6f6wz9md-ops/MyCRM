@@ -496,6 +496,19 @@ h1, h2, h3, p { margin: 0; }
 #resetAllBtn, #importJsonBtn { color: var(--danger); }
 .settings-info { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
 
+.sync-code-display {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  text-align: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: var(--radius-md);
+  padding: 20px 10px;
+  margin: 16px 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ==========================================================================
    FLOATING ACTION BUTTON
    ========================================================================== */

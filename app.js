@@ -32,6 +32,7 @@
       customItems: [], // vom Nutzer hinzugefügte Packpunkte
       customCategories: [], // vom Nutzer hinzugefügte Kategorien
       collapsed: {},   // { [categoryId]: bool }
+      syncCode: null,  // 6-stelliger Code der geteilten Liste, falls verbunden
       filters: {
         search: "",
         person: null,
@@ -69,6 +70,7 @@
       console.error("Konnte Zustand nicht speichern:", err);
       showToast("Speichern fehlgeschlagen (Speicher voll?)");
     }
+    pushToCloudDebounced();
   }
 
   /* ------------------------------------------------------------------
@@ -747,8 +749,199 @@
   }
 
   /* ------------------------------------------------------------------
-     18) INITIALISIERUNG
+     19) GEMEINSAME BEARBEITUNG (Sync über Firebase Firestore)
+     ------------------------------------------------------------------
+     Zwei Geräte (z. B. du und deine Partnerin/dein Partner) können
+     dieselbe Packliste bearbeiten. Ein Gerät erstellt eine geteilte
+     Liste und erhält einen 6-stelligen Code, das andere Gerät tritt mit
+     diesem Code bei. Danach werden Packstatus, Favoriten und eigene
+     Punkte/Kategorien in Echtzeit zwischen beiden Geräten abgeglichen.
+     Ohne gültige Konfiguration in firebase-config.js bleibt die App
+     unverändert im reinen Lokalmodus (kein Fehler, kein Sync).
+     ------------------------------------------------------------------ */
+  let db = null;
+  let unsubscribeCloud = null;
+  let isApplyingRemoteUpdate = false;
+  let cloudPushTimer = null;
+
+  function isFirebaseConfigured() {
+    return (
+      typeof firebase !== "undefined" &&
+      typeof FIREBASE_CONFIG !== "undefined" &&
+      FIREBASE_CONFIG.apiKey &&
+      FIREBASE_CONFIG.apiKey !== "DEIN_API_KEY"
+    );
+  }
+
+  function initFirebase() {
+    if (!isFirebaseConfigured()) return false;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore();
+      return true;
+    } catch (err) {
+      console.error("Firebase-Initialisierung fehlgeschlagen:", err);
+      return false;
+    }
+  }
+
+  function generateSyncCode() {
+    // Zeichen ohne leicht verwechselbare (0/O, 1/I) für bessere Lesbarkeit beim Diktieren
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+
+  function getSyncPayload() {
+    return {
+      overrides: state.overrides,
+      customItems: state.customItems,
+      customCategories: state.customCategories,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+  }
+
+  function applyRemoteData(data) {
+    isApplyingRemoteUpdate = true;
+    state.overrides = data.overrides || {};
+    state.customItems = data.customItems || [];
+    state.customCategories = data.customCategories || [];
+    saveState();
+    isApplyingRemoteUpdate = false;
+    render();
+  }
+
+  function subscribeToCloud(code) {
+    if (!db) return;
+    if (unsubscribeCloud) unsubscribeCloud();
+    unsubscribeCloud = db.collection("packlisten").doc(code).onSnapshot(
+      (doc) => {
+        if (!doc.exists) return;
+        applyRemoteData(doc.data());
+      },
+      (err) => {
+        console.error("Sync-Fehler:", err);
+        showToast("Synchronisierung unterbrochen – bitte Internetverbindung prüfen");
+      }
+    );
+  }
+
+  function pushToCloudDebounced() {
+    if (!state.syncCode || !db || isApplyingRemoteUpdate) return;
+    clearTimeout(cloudPushTimer);
+    cloudPushTimer = setTimeout(() => {
+      db.collection("packlisten")
+        .doc(state.syncCode)
+        .set(getSyncPayload(), { merge: true })
+        .catch((err) => console.error("Konnte Änderungen nicht synchronisieren:", err));
+    }, 400);
+  }
+
+  async function createSharedList() {
+    if (!initFirebase()) {
+      showToast("Firebase ist nicht konfiguriert – siehe firebase-config.js");
+      return;
+    }
+    const code = generateSyncCode();
+    try {
+      await db.collection("packlisten").doc(code).set(getSyncPayload());
+      state.syncCode = code;
+      saveState();
+      subscribeToCloud(code);
+      renderSyncStatus();
+      document.getElementById("syncCodeDisplay").textContent = code;
+      showSheet("syncCodeSheetOverlay");
+    } catch (err) {
+      console.error(err);
+      showToast("Geteilte Liste konnte nicht erstellt werden");
+    }
+  }
+
+  async function joinSharedList(rawCode) {
+    if (!initFirebase()) {
+      showToast("Firebase ist nicht konfiguriert – siehe firebase-config.js");
+      return;
+    }
+    const code = rawCode.trim().toUpperCase();
+    if (code.length < 4) {
+      showToast("Bitte einen gültigen Code eingeben");
+      return;
+    }
+    try {
+      const doc = await db.collection("packlisten").doc(code).get();
+      if (!doc.exists) {
+        showToast("Diesen Code gibt es nicht");
+        return;
+      }
+      applyRemoteData(doc.data());
+      state.syncCode = code;
+      saveState();
+      subscribeToCloud(code);
+      renderSyncStatus();
+      showToast("Verbunden mit geteilter Liste " + code);
+    } catch (err) {
+      console.error(err);
+      showToast("Verbindung fehlgeschlagen");
+    }
+  }
+
+  function disconnectSync() {
+    if (unsubscribeCloud) unsubscribeCloud();
+    unsubscribeCloud = null;
+    state.syncCode = null;
+    saveState();
+    renderSyncStatus();
+    showToast("Synchronisierung getrennt");
+  }
+
+  function renderSyncStatus() {
+    const statusText = document.getElementById("syncStatusText");
+    const createBtn = document.getElementById("createSyncBtn");
+    const joinBtn = document.getElementById("joinSyncBtn");
+    const disconnectBtn = document.getElementById("disconnectSyncBtn");
+    if (state.syncCode) {
+      statusText.textContent = `Verbunden mit geteilter Liste „${state.syncCode}“. Änderungen werden automatisch mit allen verbundenen Geräten abgeglichen.`;
+      createBtn.hidden = true;
+      joinBtn.hidden = true;
+      disconnectBtn.hidden = false;
+    } else {
+      statusText.textContent =
+        "Noch nicht verbunden. Erstelle eine geteilte Liste oder verbinde dich mit dem Code deiner Partnerin bzw. deines Partners, um die Packliste gemeinsam in Echtzeit zu bearbeiten.";
+      createBtn.hidden = false;
+      joinBtn.hidden = false;
+      disconnectBtn.hidden = true;
+    }
+  }
+
+  document.getElementById("createSyncBtn").addEventListener("click", createSharedList);
+  document.getElementById("joinSyncBtn").addEventListener("click", () => {
+    document.getElementById("joinSyncCodeInput").value = "";
+    showSheet("joinSyncSheetOverlay");
+  });
+  document.getElementById("confirmJoinSyncBtn").addEventListener("click", () => {
+    const code = document.getElementById("joinSyncCodeInput").value;
+    joinSharedList(code).then(() => hideSheet("joinSyncSheetOverlay"));
+  });
+  document.getElementById("disconnectSyncBtn").addEventListener("click", () => {
+    if (confirm("Synchronisierung wirklich trennen? Die Liste bleibt lokal auf diesem Gerät erhalten.")) {
+      disconnectSync();
+    }
+  });
+  document.getElementById("copySyncCodeBtn").addEventListener("click", () => {
+    const code = document.getElementById("syncCodeDisplay").textContent;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code).then(() => showToast("Code kopiert"));
+    }
+  });
+
+  /* ------------------------------------------------------------------
+     20) INITIALISIERUNG
      ------------------------------------------------------------------ */
   applyTheme();
+  renderSyncStatus();
+  if (state.syncCode && initFirebase()) {
+    subscribeToCloud(state.syncCode);
+  }
   render();
 })();

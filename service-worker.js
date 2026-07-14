@@ -7,7 +7,7 @@
    funktioniert – z. B. im Flugzeug oder am Strand ohne Empfang.
    ========================================================================== */
 
-const CACHE_NAME = "packliste-spanien-v3";
+const CACHE_NAME = "packliste-spanien-v4";
 
 // Alle Dateien, die für den Offline-Betrieb notwendig sind
 const APP_SHELL = [
@@ -16,6 +16,7 @@ const APP_SHELL = [
   "./style.css",
   "./app.js",
   "./data.js",
+  "./firebase-config.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
@@ -60,6 +61,13 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   // Nur GET-Anfragen behandeln, alles andere unangetastet lassen
   if (event.request.method !== "GET") return;
+
+  // Fremde Domains (z. B. Firebase/gstatic für die Sync-Funktion) nicht
+  // abfangen – diese sollen direkt und unverändert ans Netzwerk gehen,
+  // da Firestore z. B. eigene Streaming-Verbindungen nutzt, die sich
+  // nicht sinnvoll über den Cache abbilden lassen.
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) return;
 
   event.respondWith(
     fetch(event.request)
